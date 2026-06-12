@@ -122,7 +122,7 @@ function TutorialModal({ onClose }: TutorialModalProps) {
           </div>
 
           <p className="tutorial-contact">
-            📹 如有任何问题，请通过视频号联系我
+            📹 如有任何问题，请通过视频号或 vx：pengch0930 联系我
           </p>
         </div>
       </div>
