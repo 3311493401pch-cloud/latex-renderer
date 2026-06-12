@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Problem, LayoutConfig, DEFAULT_LAYOUT } from './types';
 import Editor from './components/Editor';
 import Preview from './components/Preview';
+import TutorialModal from './components/TutorialModal';
 
 let idCounter = 0;
 function generateId(): string {
@@ -31,6 +32,9 @@ const DEMO_PROBLEMS: Problem[] = [
 function App() {
   const [problems, setProblems] = useState<Problem[]>(DEMO_PROBLEMS);
   const [layout, setLayout] = useState<LayoutConfig>(DEFAULT_LAYOUT);
+  const [showTutorial, setShowTutorial] = useState(
+    () => !localStorage.getItem('latex-tutorial-seen')
+  );
 
   const addProblem = useCallback(() => {
     setProblems((prev) => [...prev, { id: generateId(), latex: '', source: '' }]);
@@ -85,6 +89,21 @@ function App() {
 
   return (
     <div className="app">
+      {showTutorial && (
+        <TutorialModal onClose={() => setShowTutorial(false)} />
+      )}
+
+      {/* Floating help button */}
+      {!showTutorial && (
+        <button
+          className="help-fab"
+          onClick={() => setShowTutorial(true)}
+          title="使用教程"
+        >
+          ?
+        </button>
+      )}
+
       <header className="app-header">
         <h1 className="app-title">LaTeX 题目渲染器</h1>
         <span className="app-subtitle">在线编辑 · 实时预览</span>
