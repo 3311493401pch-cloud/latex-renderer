@@ -54,12 +54,18 @@ function TutorialModal({ onClose }: TutorialModalProps) {
 
   useEffect(() => {
     if (!isFirstVisit) return;
-    if (countdown <= 0) return;
     const timer = setInterval(() => {
-      setCountdown((c) => c - 1);
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return c - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, [countdown, isFirstVisit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const canClose = countdown <= 0 && agreed;
 
