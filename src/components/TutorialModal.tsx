@@ -49,6 +49,7 @@ const STEPS = [
 
 function TutorialModal({ onClose }: TutorialModalProps) {
   const [countdown, setCountdown] = useState(5);
+  const [agreed, setAgreed] = useState(false);
   const isFirstVisit = !localStorage.getItem('latex-tutorial-seen');
 
   useEffect(() => {
@@ -60,7 +61,10 @@ function TutorialModal({ onClose }: TutorialModalProps) {
     return () => clearInterval(timer);
   }, [countdown, isFirstVisit]);
 
+  const canClose = countdown <= 0 && agreed;
+
   const handleClose = () => {
+    if (!canClose) return;
     if (isFirstVisit) {
       localStorage.setItem('latex-tutorial-seen', '1');
     }
@@ -72,9 +76,11 @@ function TutorialModal({ onClose }: TutorialModalProps) {
       <div className="tutorial-modal" onClick={(e) => e.stopPropagation()}>
         <div className="tutorial-header">
           <h2 className="tutorial-title">📖 使用教程</h2>
-          {isFirstVisit && countdown > 0 ? (
+          {!canClose ? (
             <span className="tutorial-countdown">
-              {countdown} 秒后可关闭
+              {countdown > 0
+                ? `${countdown} 秒后可关闭`
+                : '请先阅读并勾选下方声明'}
             </span>
           ) : (
             <button className="tutorial-close-btn" onClick={handleClose}>
@@ -99,6 +105,22 @@ function TutorialModal({ onClose }: TutorialModalProps) {
           <p className="tutorial-hint">
             💡 排版设置（间距 / 字号 / 分栏 / 编号）请自行探索左侧「⚙ 排版设置」
           </p>
+
+          <div className="tutorial-disclaimer">
+            <label className="tutorial-disclaimer-label">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+              />
+              <span>
+                我已阅读并同意以上使用说明。本工具仅供<strong>个人学习</strong>使用，
+                请尊重原书版权，不得将识别内容用于商业分发或侵权传播。
+                如涉及版权问题请联系我删除。
+              </span>
+            </label>
+          </div>
+
           <p className="tutorial-contact">
             📹 如有任何问题，请通过视频号联系我
           </p>

@@ -688,7 +688,38 @@ body {
 .tutorial-hint {
   font-size: 0.82rem;
   color: var(--color-text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.tutorial-disclaimer {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.tutorial-disclaimer-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: #6d5e00;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.tutorial-disclaimer-label input[type='checkbox'] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.tutorial-disclaimer-label strong {
+  color: #4a3f00;
 }
 
 .tutorial-contact {
