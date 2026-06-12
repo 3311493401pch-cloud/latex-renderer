@@ -54,16 +54,21 @@ function TutorialModal({ onClose }: TutorialModalProps) {
 
   useEffect(() => {
     if (!isFirstVisit) return;
-    const timer = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
+    let cancelled = false;
+
+    const tick = (remaining: number) => {
+      if (cancelled) return;
+      setCountdown(remaining);
+      if (remaining > 0) {
+        setTimeout(() => tick(remaining - 1), 1000);
+      }
+    };
+
+    tick(5);
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
