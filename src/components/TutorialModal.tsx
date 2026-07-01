@@ -71,50 +71,58 @@ const HF_STEPS = [
 const MATHPIX_STEPS = [
   {
     num: 1,
-    title: '注册 Mathpix 账号',
+    title: '注册并登录 Mathpix',
     detail: (
       <>
         访问{' '}
-        <a href="https://console.mathpix.com/signup" target="_blank" rel="noopener noreferrer">
-          console.mathpix.com/signup
+        <a href="https://accounts.mathpix.com/signup" target="_blank" rel="noopener noreferrer">
+          accounts.mathpix.com/signup
         </a>{' '}
-        注册（需邮箱验证）
+        注册账号，验证邮箱后登录
       </>
     ),
   },
   {
     num: 2,
-    title: '进入 API Keys 页面',
+    title: '进入 Convert Organizations 页面',
     detail: (
       <>
-        登录后直接访问{' '}
-        <a href="https://console.mathpix.com/api-keys" target="_blank" rel="noopener noreferrer">
-          console.mathpix.com/api-keys
+        登录后访问{' '}
+        <a href="https://console.mathpix.com/orgs" target="_blank" rel="noopener noreferrer">
+          console.mathpix.com/orgs
         </a>
-        ，页面会直接显示你的凭证
       </>
     ),
   },
   {
     num: 3,
-    title: '复制 app_id',
+    title: '创建 OCR API',
     detail: (
       <>
-        在页面上找到 <code>app_id</code> 字段（一串短字符串，如 <code>example_com_...</code>），点旁边的复制按钮
+        在页面右上角点击 <code>Create OCR API</code>，按提示创建 Convert Organization
       </>
     ),
   },
   {
     num: 4,
-    title: '复制 app_key',
+    title: '添加支付方式并支付 setup fee',
     detail: (
       <>
-        同一页面找到 <code>app_key</code> 字段（一串长字符串），点复制（⚠️ 请妥善保存，不要泄露）
+        Mathpix 需要绑定信用卡/借记卡，并支付一次性 setup fee（约 $19.99，不可退款）后才能激活 API key。完成后 dashboard 会显示 API key。
       </>
     ),
   },
   {
     num: 5,
+    title: '复制 app_id 和 app_key',
+    detail: (
+      <>
+        在 Organization dashboard 的 API keys 区域找到 <code>app_id</code> 和 <code>app_key</code>，分别复制
+      </>
+    ),
+  },
+  {
+    num: 6,
     title: '回到本站填入',
     detail: (
       <>
@@ -123,8 +131,8 @@ const MATHPIX_STEPS = [
     ),
   },
   {
-    num: 6,
-    title: '上传图片识别',
+    num: 7,
+    title: '粘贴图片识别',
     detail: '右键粘贴 / 拖拽 / 点击上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
   },
 ];
@@ -213,8 +221,8 @@ function TutorialModal({ onClose }: TutorialModalProps) {
             </p>
           ) : (
             <p>
-              <strong>付费方案</strong>。Mathpix 是业界最精准的公式识别服务，新用户有 1000 次免费额度，
-              之后约 $0.01/次。对复杂公式、手写体支持更好。
+              <strong>付费方案</strong>。Mathpix 是业界最精准的公式识别服务，但需要创建 Convert Organization
+              并支付一次性 setup fee（约 $19.99）后才能开通 API key。之后按识别次数计费，适合对准确率要求高的场景。
             </p>
           )}
         </div>
