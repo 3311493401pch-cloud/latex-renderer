@@ -31,6 +31,7 @@ const DEMO_PROBLEMS: Problem[] = [
 
 const STORAGE_KEY_PROBLEMS = 'latex-problems-cache';
 const STORAGE_KEY_LAYOUT = 'latex-layout-cache';
+const STORAGE_KEY_THEME = 'latex-theme';
 
 function loadProblems(): Problem[] {
   try {
@@ -38,7 +39,6 @@ function loadProblems(): Problem[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // 重新分配 id，避免冲突
         return parsed.map((p: { latex?: string; source?: string }) => ({
           id: generateId(),
           latex: p.latex ?? '',
@@ -64,17 +64,40 @@ function loadLayout(): LayoutConfig {
   return DEFAULT_LAYOUT;
 }
 
+function loadTheme(): 'light' | 'dark' {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_THEME);
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch {
+    /* ignore */
+  }
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+}
+
 function App() {
   const [problems, setProblems] = useState<Problem[]>(loadProblems);
   const [layout, setLayout] = useState<LayoutConfig>(loadLayout);
+  const [theme, setTheme] = useState<'light' | 'dark'>(loadTheme);
   const [showTutorial, setShowTutorial] = useState(
     () => !localStorage.getItem('latex-tutorial-seen')
   );
 
+  // 同步 data-theme 到 HTML 标签
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem(STORAGE_KEY_THEME, theme);
+    } catch {
+      /* ignore */
+    }
+  }, [theme]);
+
   // 自动保存题目
   useEffect(() => {
     try {
-      // 只存 latex 与 source，不存 id（id 每次重生成）
       const slim = problems.map((p) => ({ latex: p.latex, source: p.source }));
       localStorage.setItem(STORAGE_KEY_PROBLEMS, JSON.stringify(slim));
     } catch {
@@ -91,9 +114,23 @@ function App() {
     }
   }, [layout]);
 
+  const toggleTheme = useCallback(() => {
+    setTheme((t) => (t === 'light' ? 'dark' : 'light'));
+  }, []);
+
   const addProblem = useCallback(() => {
     setProblems((prev) => [...prev, { id: generateId(), latex: '', source: '' }]);
   }, []);
+
+  const addProblemFromOcr = useCallback(
+    (latex: string, source: string) => {
+      setProblems((prev) => [
+        ...prev,
+        { id: generateId(), latex: latex.trim(), source: source.trim() },
+      ]);
+    },
+    []
+  );
 
   const updateProblem = useCallback(
     (id: string, field: 'latex' | 'source', value: string) => {
@@ -109,6 +146,10 @@ function App() {
       if (prev.length <= 1) return prev;
       return prev.filter((p) => p.id !== id);
     });
+  }, []);
+
+  const reorderProblems = useCallback((newOrder: Problem[]) => {
+    setProblems(newOrder);
   }, []);
 
   const batchImport = useCallback(
@@ -148,7 +189,6 @@ function App() {
         <TutorialModal onClose={() => setShowTutorial(false)} />
       )}
 
-      {/* Floating help button */}
       {!showTutorial && (
         <button
           className="help-fab"
@@ -163,6 +203,13 @@ function App() {
         <h1 className="app-title">LaTeX 题目渲染器</h1>
         <span className="app-subtitle">在线编辑 · 实时预览 · 智能清洗</span>
         <div className="app-header-spacer" />
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={theme === 'light' ? '切换暗色模式' : '切换亮色模式'}
+        >
+          {theme === 'light' ? '🌙' : '☀'}
+        </button>
         <button className="btn-export" onClick={() => window.print()}>
           🖨 导出 PDF
         </button>
@@ -173,8 +220,10 @@ function App() {
           onAdd={addProblem}
           onUpdate={updateProblem}
           onDelete={deleteProblem}
+          onReorder={reorderProblems}
           onBatchImport={batchImport}
           onReplaceAll={replaceAll}
+          onAddFromOcr={addProblemFromOcr}
           layout={layout}
           onLayoutChange={updateLayout}
         />

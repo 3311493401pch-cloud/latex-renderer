@@ -8,6 +8,12 @@ interface ProblemEntryProps {
   onUpdate: (id: string, field: 'latex' | 'source', value: string) => void;
   onDelete: (id: string) => void;
   canDelete: boolean;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, id: string) => void;
+  onDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>, id: string) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>, id: string) => void;
+  isDragging: boolean;
+  isDragOver: boolean;
 }
 
 function ProblemEntry({
@@ -16,6 +22,12 @@ function ProblemEntry({
   onUpdate,
   onDelete,
   canDelete,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+  isDragging,
+  isDragOver,
 }: ProblemEntryProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showSymbols, setShowSymbols] = useState(false);
@@ -32,7 +44,6 @@ function ProblemEntry({
     const after = problem.latex.slice(end);
     const next = before + text + after;
     onUpdate(problem.id, 'latex', next);
-    // 恢复光标到插入内容之后
     requestAnimationFrame(() => {
       ta.focus();
       const pos = start + text.length;
@@ -41,7 +52,11 @@ function ProblemEntry({
   };
 
   return (
-    <div className="problem-entry">
+    <div
+      className={`problem-entry ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
+      onDragOver={(e) => onDragOver(e, problem.id)}
+      onDrop={(e) => onDrop(e, problem.id)}
+    >
       <div className="problem-entry-header">
         <span className="problem-entry-number">题目 {index + 1}</span>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -63,6 +78,19 @@ function ProblemEntry({
           </button>
         </div>
       </div>
+
+      <div className="drag-handle"
+        draggable
+        onDragStart={(e) => onDragStart(e, problem.id)}
+        onDragEnd={onDragEnd}
+        title="拖拽排序"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="4" width="12" height="2" rx="1" fill="currentColor" opacity="0.5" />
+          <rect x="2" y="10" width="12" height="2" rx="1" fill="currentColor" opacity="0.5" />
+        </svg>
+      </div>
+
       <div className="problem-entry-body">
         <textarea
           ref={textareaRef}
