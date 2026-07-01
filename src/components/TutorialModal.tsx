@@ -75,8 +75,8 @@ const MATHPIX_STEPS = [
     detail: (
       <>
         访问{' '}
-        <a href="https://dashboard.mathpix.com/signup" target="_blank" rel="noopener noreferrer">
-          dashboard.mathpix.com/signup
+        <a href="https://console.mathpix.com/signup" target="_blank" rel="noopener noreferrer">
+          console.mathpix.com/signup
         </a>{' '}
         注册（需邮箱验证）
       </>
@@ -87,24 +87,29 @@ const MATHPIX_STEPS = [
     title: '进入 API Keys 页面',
     detail: (
       <>
-        登录后进入 Dashboard，左侧菜单点{' '}
-        <a href="https://dashboard.mathpix.com/api-keys" target="_blank" rel="noopener noreferrer">
-          API Keys
+        登录后直接访问{' '}
+        <a href="https://console.mathpix.com/api-keys" target="_blank" rel="noopener noreferrer">
+          console.mathpix.com/api-keys
         </a>
+        ，页面会直接显示你的凭证
       </>
     ),
   },
   {
     num: 3,
-    title: '创建新 Key',
-    detail: <>点 <code>+ Create new API key</code>，名称随便填</>,
+    title: '复制 app_id',
+    detail: (
+      <>
+        在页面上找到 <code>app_id</code> 字段（一串短字符串，如 <code>example_com_...</code>），点旁边的复制按钮
+      </>
+    ),
   },
   {
     num: 4,
-    title: '复制 app_id 和 app_key',
+    title: '复制 app_key',
     detail: (
       <>
-        创建后会显示 <code>app_id</code>（短字符串）和 <code>app_key</code>（长字符串），分别复制
+        同一页面找到 <code>app_key</code> 字段（一串长字符串），点复制（⚠️ 请妥善保存，不要泄露）
       </>
     ),
   },
@@ -120,7 +125,7 @@ const MATHPIX_STEPS = [
   {
     num: 6,
     title: '上传图片识别',
-    detail: '上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
+    detail: '右键粘贴 / 拖拽 / 点击上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
   },
 ];
 
