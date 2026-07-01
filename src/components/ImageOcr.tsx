@@ -31,7 +31,7 @@ function getDefaultConfig(): OcrConfig {
   return {
     provider: 'siliconflow',
     siliconflowToken: '',
-    siliconflowModel: 'Qwen/Qwen2.5-VL-72B-Instruct',
+    siliconflowModel: 'Qwen/Qwen3-VL-32B-Instruct',
     simpletexToken: '',
     simpletexModel: 'turbo',
     hfToken: '',
@@ -387,10 +387,10 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
                 value={config.siliconflowModel}
                 onChange={(e) => setConfig((c) => ({ ...c, siliconflowModel: e.target.value }))}
               >
-                <option value="Qwen/Qwen2.5-VL-72B-Instruct">Qwen2.5-VL-72B (推荐，效果好)</option>
-                <option value="Qwen/Qwen2-VL-7B-Instruct">Qwen2-VL-7B (更便宜)</option>
-                <option value="OpenGVLab/InternVL2-Llama3-76B">InternVL2-76B</option>
-                <option value="Pro/Qwen/Qwen2.5-VL-7B-Instruct">Qwen2.5-VL-7B 加速版</option>
+                <option value="Qwen/Qwen3-VL-32B-Instruct">Qwen3-VL-32B (推荐，SOTA 视觉模型)</option>
+                <option value="Qwen/Qwen3-VL-8B-Instruct">Qwen3-VL-8B (更便宜，速度快)</option>
+                <option value="Qwen/Qwen3-VL-30B-A3B-Instruct">Qwen3-VL-30B-A3B (MoE，性价比)</option>
+                <option value="Qwen/Qwen3-VL-235B-A22B-Instruct">Qwen3-VL-235B (最强，贵)</option>
               </select>
             </div>
             <p className="image-ocr-tip">

@@ -42,7 +42,7 @@ const SILICONFLOW_STEPS = [
         <a href="https://cloud.siliconflow.cn/models?tags=%E8%A7%86%E8%A7%89" target="_blank" rel="noopener noreferrer">
           模型广场 → 视觉
         </a>{' '}
-        → 找到 <code>Qwen2.5-VL-72B-Instruct</code> → 点「开通」（免费开通，不扣费）。
+        → 找到 <code>Qwen3-VL-32B-Instruct</code> → 点「开通」（免费开通，不扣费）。
         <br />
         ⚠️ 不开通会报 <code>Model disabled</code> 错误！
       </>
@@ -54,7 +54,7 @@ const SILICONFLOW_STEPS = [
     detail: (
       <>
         点左侧「🖼 图片识别」→ 服务默认 <code>SiliconFlow</code> → 粘贴 API Key，模型默认
-        <code>Qwen2.5-VL-72B</code> 即可
+        <code>Qwen3-VL-32B</code> 即可
       </>
     ),
   },
