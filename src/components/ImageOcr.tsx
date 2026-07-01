@@ -27,7 +27,7 @@ function getDefaultConfig(): OcrConfig {
   return {
     provider: 'huggingface',
     hfToken: '',
-    hfModel: 'lukas-blecher/LaTeX-OCR',
+    hfModel: 'yhshin/latex-ocr',
     mathpixAppId: '',
     mathpixAppKey: '',
   };
@@ -55,19 +55,59 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
   const [error, setError] = useState<string>('');
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     saveConfig(config);
   }, [config]);
 
-  const handleFile = (f: File | null) => {
+  // 释放旧的 object URL
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const handleFile = useCallback((f: File | null) => {
     if (!f) return;
     setFile(f);
     const url = URL.createObjectURL(f);
-    setPreviewUrl(url);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
+    });
     setResult('');
     setError('');
-  };
+  }, []);
+
+  // 全局监听右键粘贴 / Ctrl+V 图片
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      let handled = false;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          if (blob) {
+            e.preventDefault();
+            const name = `pasted-${Date.now()}.${blob.type === 'image/png' ? 'png' : 'jpg'}`;
+            handleFile(new File([blob], name, { type: blob.type }));
+            handled = true;
+            break;
+          }
+        }
+      }
+      if (!handled) return;
+      // 粘贴后自动滚动到识别区域
+      containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [handleFile]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -99,7 +139,15 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
         await recognizeMathpix(file, config);
       }
     } catch (err: any) {
-      setError(err?.message || '识别失败');
+      const msg = err?.message || '识别失败';
+      // 给 TypeError / Failed to fetch 更友好的中文解释
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch')) {
+        setError(
+          '网络请求失败，可能原因：\n① 浏览器拦截了跨域请求（CORS）\n② 该模型暂未启用 Hugging Face Inference API\n③ 网络/代理问题。建议：换 Mathpix 试试，或更换模型 ID 后重试。'
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -119,6 +167,7 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${cfg.hfToken}`,
+          Accept: 'application/json',
         },
         body: image,
       }
@@ -190,9 +239,9 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
   };
 
   return (
-    <div className="image-ocr">
+    <div className="image-ocr" ref={containerRef}>
       <p className="image-ocr-hint">
-        上传题目截图，自动识别成 LaTeX。需要自行配置 API Key/Token（数据仅保存在浏览器本地）。
+        上传或<strong>右键粘贴</strong>题目截图，自动识别成 LaTeX。需要自行配置 API Key/Token（数据仅保存在浏览器本地）。
       </p>
 
       <div className="image-ocr-provider">
@@ -228,9 +277,12 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
                 className="image-ocr-input"
                 value={config.hfModel}
                 onChange={(e) => setConfig((c) => ({ ...c, hfModel: e.target.value }))}
-                placeholder="例如 lukas-blecher/LaTeX-OCR"
+                placeholder="例如 yhshin/latex-ocr"
               />
             </div>
+            <p className="image-ocr-tip">
+              💡 默认模型 <code>yhshin/latex-ocr</code>。如果识别失败，可尝试换 <code>Norm/pix2tex</code> 或直接用 Mathpix。
+            </p>
           </>
         )}
 
@@ -277,13 +329,17 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
           <img src={previewUrl} alt="预览" className="image-ocr-preview" />
         ) : (
           <div className="image-ocr-dropzone-text">
-            <span>📤</span>
-            <p>拖拽图片到此处，或点击选择</p>
+            <span>📋</span>
+            <p>拖拽 / 点击 / 右键粘贴图片</p>
           </div>
         )}
       </div>
 
-      {error && <p className="image-ocr-error">⚠️ {error}</p>}
+      {error && (
+        <pre className="image-ocr-error" style={{ whiteSpace: 'pre-wrap' }}>
+          ⚠️ {error}
+        </pre>
+      )}
 
       <div className="image-ocr-actions">
         <button
