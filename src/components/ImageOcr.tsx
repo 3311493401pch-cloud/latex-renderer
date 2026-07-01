@@ -312,7 +312,7 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
                 type="password"
                 value={config.simpletexToken}
                 onChange={(e) => setConfig((c) => ({ ...c, simpletexToken: e.target.value }))}
-                placeholder="在 simpletex.cn/user/center 创建"
+                placeholder="在 simpletex.cn/api 控制面板创建"
               />
             </div>
             <div className="image-ocr-row">

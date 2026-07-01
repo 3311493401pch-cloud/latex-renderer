@@ -13,8 +13,8 @@ const SIMPLETEX_STEPS = [
     detail: (
       <>
         访问{' '}
-        <a href="https://simpletex.cn" target="_blank" rel="noopener noreferrer">
-          simpletex.cn
+        <a href="https://simpletex.cn/user/register" target="_blank" rel="noopener noreferrer">
+          simpletex.cn/user/register
         </a>{' '}
         注册账号（国内服务，免费，邮箱即可）
       </>
@@ -22,27 +22,37 @@ const SIMPLETEX_STEPS = [
   },
   {
     num: 2,
-    title: '进入用户中心',
+    title: '进入 API 接口页面',
     detail: (
       <>
-        登录后访问{' '}
-        <a href="https://simpletex.cn/user/center" target="_blank" rel="noopener noreferrer">
-          simpletex.cn/user/center
-        </a>
+        注册登录后，访问{' '}
+        <a href="https://simpletex.cn/api" target="_blank" rel="noopener noreferrer">
+          simpletex.cn/api
+        </a>{' '}
+        （或点击官网顶部「API 接口」菜单）
       </>
     ),
   },
   {
     num: 3,
-    title: '创建用户授权令牌 (UAT)',
+    title: '前往 API 控制面板',
     detail: (
       <>
-        在「用户授权令牌」菜单处点创建，复制生成的 UAT 字符串
+        在 API 接口页面找到「前往 API 控制面板」按钮并点击（首次可能需开通开放平台账户，按提示同意即可）
       </>
     ),
   },
   {
     num: 4,
+    title: '创建用户授权令牌 (UAT)',
+    detail: (
+      <>
+        进入控制面板后，点击左侧菜单「用户授权令牌」→ 点创建 → 名字随便填（如 <code>latex</code>）→ 复制生成的 UAT 字符串
+      </>
+    ),
+  },
+  {
+    num: 5,
     title: '回到本站填入',
     detail: (
       <>
@@ -51,7 +61,7 @@ const SIMPLETEX_STEPS = [
     ),
   },
   {
-    num: 5,
+    num: 6,
     title: '上传图片识别',
     detail: '右键粘贴 / 拖拽 / 点击上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
   },
