@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Problem, LayoutConfig, DEFAULT_LAYOUT } from './types';
 import Editor from './components/Editor';
 import Preview from './components/Preview';
@@ -29,12 +29,67 @@ const DEMO_PROBLEMS: Problem[] = [
   },
 ];
 
+const STORAGE_KEY_PROBLEMS = 'latex-problems-cache';
+const STORAGE_KEY_LAYOUT = 'latex-layout-cache';
+
+function loadProblems(): Problem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PROBLEMS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // 重新分配 id，避免冲突
+        return parsed.map((p: { latex?: string; source?: string }) => ({
+          id: generateId(),
+          latex: p.latex ?? '',
+          source: p.source ?? '',
+        }));
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return DEMO_PROBLEMS;
+}
+
+function loadLayout(): LayoutConfig {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LAYOUT);
+    if (raw) {
+      return { ...DEFAULT_LAYOUT, ...JSON.parse(raw) };
+    }
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_LAYOUT;
+}
+
 function App() {
-  const [problems, setProblems] = useState<Problem[]>(DEMO_PROBLEMS);
-  const [layout, setLayout] = useState<LayoutConfig>(DEFAULT_LAYOUT);
+  const [problems, setProblems] = useState<Problem[]>(loadProblems);
+  const [layout, setLayout] = useState<LayoutConfig>(loadLayout);
   const [showTutorial, setShowTutorial] = useState(
     () => !localStorage.getItem('latex-tutorial-seen')
   );
+
+  // 自动保存题目
+  useEffect(() => {
+    try {
+      // 只存 latex 与 source，不存 id（id 每次重生成）
+      const slim = problems.map((p) => ({ latex: p.latex, source: p.source }));
+      localStorage.setItem(STORAGE_KEY_PROBLEMS, JSON.stringify(slim));
+    } catch {
+      /* ignore */
+    }
+  }, [problems]);
+
+  // 自动保存排版设置
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_LAYOUT, JSON.stringify(layout));
+    } catch {
+      /* ignore */
+    }
+  }, [layout]);
 
   const addProblem = useCallback(() => {
     setProblems((prev) => [...prev, { id: generateId(), latex: '', source: '' }]);
@@ -106,7 +161,7 @@ function App() {
 
       <header className="app-header">
         <h1 className="app-title">LaTeX 题目渲染器</h1>
-        <span className="app-subtitle">在线编辑 · 实时预览</span>
+        <span className="app-subtitle">在线编辑 · 实时预览 · 智能清洗</span>
         <div className="app-header-spacer" />
         <button className="btn-export" onClick={() => window.print()}>
           🖨 导出 PDF
