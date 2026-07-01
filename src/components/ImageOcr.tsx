@@ -204,6 +204,12 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
 
     if (!resp.ok) {
       const text = await resp.text().catch(() => '');
+      // Model disabled: 需要去模型广场开通
+      if (text.includes('Model disabled') || text.includes('30003')) {
+        throw new Error(
+          `模型未开通！\n请前往 SiliconFlow 模型广场开通该视觉模型：\nhttps://cloud.siliconflow.cn/models?tags=%E8%A7%86%E8%A7%89\n找到对应模型 → 点「开通」→ 即可使用。\n或换一个已开通的模型试试。`
+        );
+      }
       throw new Error(`SiliconFlow 请求失败 (${resp.status}): ${text.slice(0, 200)}`);
     }
 
@@ -390,6 +396,12 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
             <p className="image-ocr-tip">
               💡 国内服务，无需翻墙。注册即送 <strong>14 元额度</strong>（约 3000+ 次图片识别），
               OpenAI 兼容格式，无需预充值。key 在控制台「API 密钥」一键创建。
+              <br />
+              ⚠️ 如果报 <code>Model disabled</code> 错误，请去{' '}
+              <a href="https://cloud.siliconflow.cn/models?tags=%E8%A7%86%E8%A7%89" target="_blank" rel="noopener noreferrer">
+                模型广场
+              </a>{' '}
+              开通对应模型（免费开通）。
             </p>
           </>
         )}

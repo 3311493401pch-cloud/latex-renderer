@@ -35,6 +35,21 @@ const SILICONFLOW_STEPS = [
   },
   {
     num: 3,
+    title: '开通视觉模型（重要！）',
+    detail: (
+      <>
+        进入{' '}
+        <a href="https://cloud.siliconflow.cn/models?tags=%E8%A7%86%E8%A7%89" target="_blank" rel="noopener noreferrer">
+          模型广场 → 视觉
+        </a>{' '}
+        → 找到 <code>Qwen2.5-VL-72B-Instruct</code> → 点「开通」（免费开通，不扣费）。
+        <br />
+        ⚠️ 不开通会报 <code>Model disabled</code> 错误！
+      </>
+    ),
+  },
+  {
+    num: 4,
     title: '回到本站填入',
     detail: (
       <>
@@ -44,7 +59,7 @@ const SILICONFLOW_STEPS = [
     ),
   },
   {
-    num: 4,
+    num: 5,
     title: '上传图片识别',
     detail: '右键粘贴 / 拖拽 / 点击上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
   },
