@@ -1,12 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { parseBatchTex } from '../utils';
 
-export type OcrProvider = 'simpletex' | 'huggingface' | 'mathpix';
+export type OcrProvider = 'siliconflow' | 'simpletex' | 'huggingface' | 'mathpix';
 
 const STORAGE_KEY_OCR = 'latex-ocr-config';
 
 interface OcrConfig {
   provider: OcrProvider;
+  siliconflowToken: string;
+  siliconflowModel: string;
   simpletexToken: string;
   simpletexModel: 'turbo' | 'standard';
   hfToken: string;
@@ -27,7 +29,9 @@ function loadConfig(): OcrConfig {
 
 function getDefaultConfig(): OcrConfig {
   return {
-    provider: 'simpletex',
+    provider: 'siliconflow',
+    siliconflowToken: '',
+    siliconflowModel: 'Qwen/Qwen2.5-VL-72B-Instruct',
     simpletexToken: '',
     simpletexModel: 'turbo',
     hfToken: '',
@@ -136,7 +140,9 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
     setError('');
 
     try {
-      if (config.provider === 'simpletex') {
+      if (config.provider === 'siliconflow') {
+        await recognizeSiliconFlow(file, config);
+      } else if (config.provider === 'simpletex') {
         await recognizeSimpleTex(file, config);
       } else if (config.provider === 'huggingface') {
         await recognizeHuggingFace(file, config);
@@ -147,7 +153,7 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
       const msg = err?.message || '识别失败';
       if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch')) {
         setError(
-          '网络请求失败，可能原因：\n① 浏览器拦截了跨域请求（CORS）\n② 服务暂不可用\n③ 网络/代理问题\n建议：优先使用 SimpleTex（国内服务，跨域友好）'
+          '网络请求失败，可能原因：\n① 浏览器拦截了跨域请求（CORS）\n② 服务暂不可用\n③ 网络/代理问题\n建议：优先使用 SiliconFlow（国内服务，注册送14元）'
         );
       } else {
         setError(msg);
@@ -156,6 +162,58 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
       setLoading(false);
     }
   }, [file, config]);
+
+  // ===== SiliconFlow (OpenAI 兼容, 视觉模型) =====
+  const recognizeSiliconFlow = async (image: File, cfg: OcrConfig) => {
+    if (!cfg.siliconflowToken) {
+      throw new Error('请先输入 SiliconFlow API Key');
+    }
+    if (!cfg.siliconflowModel) {
+      throw new Error('请输入模型 ID');
+    }
+
+    const base64 = await fileToBase64(image);
+
+    const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${cfg.siliconflowToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: cfg.siliconflowModel,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: { url: base64 },
+              },
+              {
+                type: 'text',
+                text: '请将图片中的数学公式识别为纯 LaTeX 代码。要求：\n1. 只输出 LaTeX 代码，不要输出任何解释、说明、问候语\n2. 不要使用 ```latex ``` 包裹\n3. 多个公式用空行分隔\n4. 行内公式用 \\( ... \\)，独立公式用 \\[ ... \\]\n5. 保留原图中的题号、文字说明',
+              },
+            ],
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 2048,
+      }),
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      throw new Error(`SiliconFlow 请求失败 (${resp.status}): ${text.slice(0, 200)}`);
+    }
+
+    const data = await resp.json();
+    const text = data?.choices?.[0]?.message?.content || '';
+    if (!text) {
+      throw new Error('SiliconFlow 返回结果为空');
+    }
+    setResult(text);
+  };
 
   // ===== SimpleTex =====
   const recognizeSimpleTex = async (image: File, cfg: OcrConfig) => {
@@ -284,7 +342,7 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
   return (
     <div className="image-ocr" ref={containerRef}>
       <p className="image-ocr-hint">
-        上传或<strong>右键粘贴</strong>题目截图，自动识别成 LaTeX。推荐使用 SimpleTex（国内服务，免费 1000 次/月）。
+        上传或<strong>右键粘贴</strong>题目截图，自动识别成 LaTeX。推荐 SiliconFlow（国内服务，注册送 14 元额度，无需充值）。
       </p>
 
       <div className="image-ocr-provider">
@@ -297,11 +355,44 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
               setConfig((c) => ({ ...c, provider: e.target.value as OcrProvider }))
             }
           >
-            <option value="simpletex">SimpleTex (推荐 · 免费 1000 次/月)</option>
+            <option value="siliconflow">SiliconFlow (推荐 · 注册送14元)</option>
+            <option value="simpletex">SimpleTex (免费 1000 次/月)</option>
             <option value="huggingface">Hugging Face (免费，需 Token)</option>
             <option value="mathpix">Mathpix (精准，需 setup fee)</option>
           </select>
         </div>
+
+        {config.provider === 'siliconflow' && (
+          <>
+            <div className="image-ocr-row">
+              <span className="image-ocr-label">API Key</span>
+              <input
+                className="image-ocr-input"
+                type="password"
+                value={config.siliconflowToken}
+                onChange={(e) => setConfig((c) => ({ ...c, siliconflowToken: e.target.value }))}
+                placeholder="sk-... 在 cloud.siliconflow.cn 创建"
+              />
+            </div>
+            <div className="image-ocr-row">
+              <span className="image-ocr-label">模型</span>
+              <select
+                className="image-ocr-select"
+                value={config.siliconflowModel}
+                onChange={(e) => setConfig((c) => ({ ...c, siliconflowModel: e.target.value }))}
+              >
+                <option value="Qwen/Qwen2.5-VL-72B-Instruct">Qwen2.5-VL-72B (推荐，效果好)</option>
+                <option value="Qwen/Qwen2-VL-7B-Instruct">Qwen2-VL-7B (更便宜)</option>
+                <option value="OpenGVLab/InternVL2-Llama3-76B">InternVL2-76B</option>
+                <option value="Pro/Qwen/Qwen2.5-VL-7B-Instruct">Qwen2.5-VL-7B 加速版</option>
+              </select>
+            </div>
+            <p className="image-ocr-tip">
+              💡 国内服务，无需翻墙。注册即送 <strong>14 元额度</strong>（约 3000+ 次图片识别），
+              OpenAI 兼容格式，无需预充值。key 在控制台「API 密钥」一键创建。
+            </p>
+          </>
+        )}
 
         {config.provider === 'simpletex' && (
           <>

@@ -4,7 +4,51 @@ interface TutorialModalProps {
   onClose: () => void;
 }
 
-type Provider = 'simpletex' | 'huggingface' | 'mathpix';
+type Provider = 'siliconflow' | 'simpletex' | 'huggingface' | 'mathpix';
+
+const SILICONFLOW_STEPS = [
+  {
+    num: 1,
+    title: '注册 SiliconFlow 账号',
+    detail: (
+      <>
+        访问{' '}
+        <a href="https://cloud.siliconflow.cn/i/user_register" target="_blank" rel="noopener noreferrer">
+          cloud.siliconflow.cn
+        </a>{' '}
+        注册（国内服务，免费，手机号即可，<strong>注册即送 14 元额度</strong>）
+      </>
+    ),
+  },
+  {
+    num: 2,
+    title: '创建 API 密钥',
+    detail: (
+      <>
+        登录后进入{' '}
+        <a href="https://cloud.siliconflow.cn/account/ak" target="_blank" rel="noopener noreferrer">
+          控制台 → API 密钥
+        </a>{' '}
+        → 点「新建 API 密钥」→ 复制 <code>sk-...</code>
+      </>
+    ),
+  },
+  {
+    num: 3,
+    title: '回到本站填入',
+    detail: (
+      <>
+        点左侧「🖼 图片识别」→ 服务默认 <code>SiliconFlow</code> → 粘贴 API Key，模型默认
+        <code>Qwen2.5-VL-72B</code> 即可
+      </>
+    ),
+  },
+  {
+    num: 4,
+    title: '上传图片识别',
+    detail: '右键粘贴 / 拖拽 / 点击上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
+  },
+];
 
 const SIMPLETEX_STEPS = [
   {
@@ -201,7 +245,7 @@ const MATHPIX_STEPS = [
 function TutorialModal({ onClose }: TutorialModalProps) {
   const [countdown, setCountdown] = useState(5);
   const [agreed, setAgreed] = useState(false);
-  const [provider, setProvider] = useState<Provider>('simpletex');
+  const [provider, setProvider] = useState<Provider>('siliconflow');
   const isFirstVisit = !localStorage.getItem('latex-tutorial-seen');
 
   useEffect(() => {
@@ -235,11 +279,13 @@ function TutorialModal({ onClose }: TutorialModalProps) {
   };
 
   const steps =
-    provider === 'simpletex'
-      ? SIMPLETEX_STEPS
-      : provider === 'huggingface'
-        ? HF_STEPS
-        : MATHPIX_STEPS;
+    provider === 'siliconflow'
+      ? SILICONFLOW_STEPS
+      : provider === 'simpletex'
+        ? SIMPLETEX_STEPS
+        : provider === 'huggingface'
+          ? HF_STEPS
+          : MATHPIX_STEPS;
 
   return (
     <div className="tutorial-overlay" onClick={handleClose}>
@@ -260,16 +306,22 @@ function TutorialModal({ onClose }: TutorialModalProps) {
         </div>
 
         <p className="tutorial-intro">
-          本站支持上传题目图片自动识别为 LaTeX。需要配置一个识别服务的 API Key（数据仅保存在你的浏览器本地，不会上传到本站服务器）。推荐使用 SimpleTex，国内服务、免费、无需翻墙。
+          本站支持上传题目图片自动识别为 LaTeX。需要配置一个识别服务的 API Key（数据仅保存在你的浏览器本地，不会上传到本站服务器）。推荐 SiliconFlow，国内服务、注册送 14 元额度、无需预充值。
         </p>
 
         {/* Provider Tabs */}
         <div className="tutorial-tabs">
           <button
+            className={`tutorial-tab ${provider === 'siliconflow' ? 'active' : ''}`}
+            onClick={() => setProvider('siliconflow')}
+          >
+            ⭐ SiliconFlow（推荐）
+          </button>
+          <button
             className={`tutorial-tab ${provider === 'simpletex' ? 'active' : ''}`}
             onClick={() => setProvider('simpletex')}
           >
-            ⭐ SimpleTex（推荐）
+            📐 SimpleTex
           </button>
           <button
             className={`tutorial-tab ${provider === 'huggingface' ? 'active' : ''}`}
@@ -286,10 +338,15 @@ function TutorialModal({ onClose }: TutorialModalProps) {
         </div>
 
         <div className="tutorial-tab-info">
-          {provider === 'simpletex' ? (
+          {provider === 'siliconflow' ? (
             <p>
-              <strong>推荐方案</strong>。国内服务，无需翻墙，注册即送免费额度。
-              轻量模型每月 1000 次免费，标准模型每月 500 次免费。UAT 令牌一键创建，接入极简。
+              <strong>最推荐方案</strong>。国内服务，无需翻墙，<strong>注册即送 14 元额度</strong>（约 3000+ 次图片识别），
+              无需预充值、无需绑卡。OpenAI 兼容 API，调用 Qwen2.5-VL 视觉大模型，对复杂公式识别效果好。
+            </p>
+          ) : provider === 'simpletex' ? (
+            <p>
+              专用公式识别服务。轻量模型每月 1000 次免费，标准模型每月 500 次免费。
+              UAT 令牌一键创建，接入极简。可能需要先开通开放平台账户。
             </p>
           ) : provider === 'huggingface' ? (
             <p>
