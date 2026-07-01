@@ -4,7 +4,58 @@ interface TutorialModalProps {
   onClose: () => void;
 }
 
-type Provider = 'huggingface' | 'mathpix';
+type Provider = 'simpletex' | 'huggingface' | 'mathpix';
+
+const SIMPLETEX_STEPS = [
+  {
+    num: 1,
+    title: '注册 SimpleTex 账号',
+    detail: (
+      <>
+        访问{' '}
+        <a href="https://simpletex.cn" target="_blank" rel="noopener noreferrer">
+          simpletex.cn
+        </a>{' '}
+        注册账号（国内服务，免费，邮箱即可）
+      </>
+    ),
+  },
+  {
+    num: 2,
+    title: '进入用户中心',
+    detail: (
+      <>
+        登录后访问{' '}
+        <a href="https://simpletex.cn/user/center" target="_blank" rel="noopener noreferrer">
+          simpletex.cn/user/center
+        </a>
+      </>
+    ),
+  },
+  {
+    num: 3,
+    title: '创建用户授权令牌 (UAT)',
+    detail: (
+      <>
+        在「用户授权令牌」菜单处点创建，复制生成的 UAT 字符串
+      </>
+    ),
+  },
+  {
+    num: 4,
+    title: '回到本站填入',
+    detail: (
+      <>
+        点左侧「🖼 图片识别」→ 服务默认 <code>SimpleTex</code> → 粘贴 UAT 令牌
+      </>
+    ),
+  },
+  {
+    num: 5,
+    title: '上传图片识别',
+    detail: '右键粘贴 / 拖拽 / 点击上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
+  },
+];
 
 const HF_STEPS = [
   {
@@ -57,34 +108,34 @@ const HF_STEPS = [
     detail: (
       <>
         点左侧「🖼 图片识别」→ 服务选 <code>Hugging Face</code> → 粘贴 Token，模型默认
-        <code>lukas-blecher/LaTeX-OCR</code> 即可
+        <code>yhshin/latex-ocr</code> 即可
       </>
     ),
   },
   {
     num: 6,
     title: '上传图片识别',
-    detail: '上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
+    detail: '右键粘贴 / 拖拽 / 点击上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
   },
 ];
 
 const MATHPIX_STEPS = [
   {
     num: 1,
-    title: '注册并登录 Mathpix',
+    title: '注册 Mathpix 账号',
     detail: (
       <>
         访问{' '}
         <a href="https://accounts.mathpix.com/signup" target="_blank" rel="noopener noreferrer">
           accounts.mathpix.com/signup
         </a>{' '}
-        注册账号，验证邮箱后登录
+        注册（需邮箱验证）
       </>
     ),
   },
   {
     num: 2,
-    title: '进入 Convert Organizations 页面',
+    title: '进入 Convert Organizations',
     detail: (
       <>
         登录后访问{' '}
@@ -117,7 +168,7 @@ const MATHPIX_STEPS = [
     title: '复制 app_id 和 app_key',
     detail: (
       <>
-        在 Organization dashboard 的 API keys 区域找到 <code>app_id</code> 和 <code>app_key</code>，分别复制
+        在 Organization dashboard 上找到 <code>app_id</code>（短字符串）和 <code>app_key</code>（长字符串），分别复制
       </>
     ),
   },
@@ -132,7 +183,7 @@ const MATHPIX_STEPS = [
   },
   {
     num: 7,
-    title: '粘贴图片识别',
+    title: '上传图片识别',
     detail: '右键粘贴 / 拖拽 / 点击上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
   },
 ];
@@ -140,7 +191,7 @@ const MATHPIX_STEPS = [
 function TutorialModal({ onClose }: TutorialModalProps) {
   const [countdown, setCountdown] = useState(5);
   const [agreed, setAgreed] = useState(false);
-  const [provider, setProvider] = useState<Provider>('huggingface');
+  const [provider, setProvider] = useState<Provider>('simpletex');
   const isFirstVisit = !localStorage.getItem('latex-tutorial-seen');
 
   useEffect(() => {
@@ -173,7 +224,12 @@ function TutorialModal({ onClose }: TutorialModalProps) {
     onClose();
   };
 
-  const steps = provider === 'huggingface' ? HF_STEPS : MATHPIX_STEPS;
+  const steps =
+    provider === 'simpletex'
+      ? SIMPLETEX_STEPS
+      : provider === 'huggingface'
+        ? HF_STEPS
+        : MATHPIX_STEPS;
 
   return (
     <div className="tutorial-overlay" onClick={handleClose}>
@@ -194,35 +250,46 @@ function TutorialModal({ onClose }: TutorialModalProps) {
         </div>
 
         <p className="tutorial-intro">
-          本站支持上传题目图片自动识别为 LaTeX。需要配置一个识别服务的 API Key（数据仅保存在你的浏览器本地，不会上传到本站服务器）。下方任选其一即可：
+          本站支持上传题目图片自动识别为 LaTeX。需要配置一个识别服务的 API Key（数据仅保存在你的浏览器本地，不会上传到本站服务器）。推荐使用 SimpleTex，国内服务、免费、无需翻墙。
         </p>
 
         {/* Provider Tabs */}
         <div className="tutorial-tabs">
           <button
+            className={`tutorial-tab ${provider === 'simpletex' ? 'active' : ''}`}
+            onClick={() => setProvider('simpletex')}
+          >
+            ⭐ SimpleTex（推荐）
+          </button>
+          <button
             className={`tutorial-tab ${provider === 'huggingface' ? 'active' : ''}`}
             onClick={() => setProvider('huggingface')}
           >
-            🤗 Hugging Face（免费）
+            🤗 Hugging Face
           </button>
           <button
             className={`tutorial-tab ${provider === 'mathpix' ? 'active' : ''}`}
             onClick={() => setProvider('mathpix')}
           >
-            ⚡ Mathpix（更精准）
+            ⚡ Mathpix
           </button>
         </div>
 
         <div className="tutorial-tab-info">
-          {provider === 'huggingface' ? (
+          {provider === 'simpletex' ? (
             <p>
-              <strong>免费方案</strong>。Hugging Face 提供开源模型推理 API，注册即送额度，
-              日常识别题目足够用。识别效果依赖模型，复杂公式偶有偏差。
+              <strong>推荐方案</strong>。国内服务，无需翻墙，注册即送免费额度。
+              轻量模型每月 1000 次免费，标准模型每月 500 次免费。UAT 令牌一键创建，接入极简。
+            </p>
+          ) : provider === 'huggingface' ? (
+            <p>
+              <strong>免费方案</strong>。Hugging Face 提供开源模型推理 API，注册即送额度。
+              国外服务，可能需要翻墙，复杂公式偶有偏差。
             </p>
           ) : (
             <p>
               <strong>付费方案</strong>。Mathpix 是业界最精准的公式识别服务，但需要创建 Convert Organization
-              并支付一次性 setup fee（约 $19.99）后才能开通 API key。之后按识别次数计费，适合对准确率要求高的场景。
+              并支付一次性 setup fee（约 $19.99）后才能开通 API key。适合对准确率要求极高的场景。
             </p>
           )}
         </div>

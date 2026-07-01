@@ -1,12 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { parseBatchTex } from '../utils';
 
-export type OcrProvider = 'huggingface' | 'mathpix';
+export type OcrProvider = 'simpletex' | 'huggingface' | 'mathpix';
 
 const STORAGE_KEY_OCR = 'latex-ocr-config';
 
 interface OcrConfig {
   provider: OcrProvider;
+  simpletexToken: string;
+  simpletexModel: 'turbo' | 'standard';
   hfToken: string;
   hfModel: string;
   mathpixAppId: string;
@@ -25,7 +27,9 @@ function loadConfig(): OcrConfig {
 
 function getDefaultConfig(): OcrConfig {
   return {
-    provider: 'huggingface',
+    provider: 'simpletex',
+    simpletexToken: '',
+    simpletexModel: 'turbo',
     hfToken: '',
     hfModel: 'yhshin/latex-ocr',
     mathpixAppId: '',
@@ -101,7 +105,6 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
         }
       }
       if (!handled) return;
-      // 粘贴后自动滚动到识别区域
       containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
@@ -133,17 +136,18 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
     setError('');
 
     try {
-      if (config.provider === 'huggingface') {
+      if (config.provider === 'simpletex') {
+        await recognizeSimpleTex(file, config);
+      } else if (config.provider === 'huggingface') {
         await recognizeHuggingFace(file, config);
       } else {
         await recognizeMathpix(file, config);
       }
     } catch (err: any) {
       const msg = err?.message || '识别失败';
-      // 给 TypeError / Failed to fetch 更友好的中文解释
       if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch')) {
         setError(
-          '网络请求失败，可能原因：\n① 浏览器拦截了跨域请求（CORS）\n② 该模型暂未启用 Hugging Face Inference API\n③ 网络/代理问题。建议：换 Mathpix 试试，或更换模型 ID 后重试。'
+          '网络请求失败，可能原因：\n① 浏览器拦截了跨域请求（CORS）\n② 服务暂不可用\n③ 网络/代理问题\n建议：优先使用 SimpleTex（国内服务，跨域友好）'
         );
       } else {
         setError(msg);
@@ -152,6 +156,46 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
       setLoading(false);
     }
   }, [file, config]);
+
+  // ===== SimpleTex =====
+  const recognizeSimpleTex = async (image: File, cfg: OcrConfig) => {
+    if (!cfg.simpletexToken) {
+      throw new Error('请先输入 SimpleTex 用户授权令牌（UAT）');
+    }
+
+    const endpoint =
+      cfg.simpletexModel === 'standard'
+        ? 'https://server.simpletex.cn/api/latex_ocr'
+        : 'https://server.simpletex.cn/api/latex_ocr_turbo';
+
+    const formData = new FormData();
+    formData.append('file', image);
+
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        token: cfg.simpletexToken,
+      },
+      body: formData,
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      throw new Error(`SimpleTex 请求失败 (${resp.status}): ${text.slice(0, 200)}`);
+    }
+
+    const data = await resp.json();
+    if (data.status !== true) {
+      throw new Error(`SimpleTex 返回失败: ${JSON.stringify(data).slice(0, 200)}`);
+    }
+
+    // 响应: { status: true, res: { latex: "...", conf: 0.95 }, request_id: "..." }
+    const latex = data?.res?.latex || '';
+    if (!latex) {
+      throw new Error('SimpleTex 返回结果为空');
+    }
+    setResult(latex);
+  };
 
   const recognizeHuggingFace = async (image: File, cfg: OcrConfig) => {
     if (!cfg.hfToken) {
@@ -179,7 +223,6 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
     }
 
     const data = await resp.json();
-    // 响应可能是 string 或 [{ generated_text: '...' }]
     let text = '';
     if (typeof data === 'string') {
       text = data;
@@ -241,7 +284,7 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
   return (
     <div className="image-ocr" ref={containerRef}>
       <p className="image-ocr-hint">
-        上传或<strong>右键粘贴</strong>题目截图，自动识别成 LaTeX。需要自行配置 API Key/Token（数据仅保存在浏览器本地）。
+        上传或<strong>右键粘贴</strong>题目截图，自动识别成 LaTeX。推荐使用 SimpleTex（国内服务，免费 1000 次/月）。
       </p>
 
       <div className="image-ocr-provider">
@@ -254,10 +297,45 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
               setConfig((c) => ({ ...c, provider: e.target.value as OcrProvider }))
             }
           >
+            <option value="simpletex">SimpleTex (推荐 · 免费 1000 次/月)</option>
             <option value="huggingface">Hugging Face (免费，需 Token)</option>
-            <option value="mathpix">Mathpix (精准，需 app_id/key)</option>
+            <option value="mathpix">Mathpix (精准，需 setup fee)</option>
           </select>
         </div>
+
+        {config.provider === 'simpletex' && (
+          <>
+            <div className="image-ocr-row">
+              <span className="image-ocr-label">UAT 令牌</span>
+              <input
+                className="image-ocr-input"
+                type="password"
+                value={config.simpletexToken}
+                onChange={(e) => setConfig((c) => ({ ...c, simpletexToken: e.target.value }))}
+                placeholder="在 simpletex.cn/user/center 创建"
+              />
+            </div>
+            <div className="image-ocr-row">
+              <span className="image-ocr-label">模型</span>
+              <select
+                className="image-ocr-select"
+                value={config.simpletexModel}
+                onChange={(e) =>
+                  setConfig((c) => ({
+                    ...c,
+                    simpletexModel: e.target.value as 'turbo' | 'standard',
+                  }))
+                }
+              >
+                <option value="turbo">轻量模型 (免费 1000 次/月，速度快)</option>
+                <option value="standard">标准模型 (免费 500 次/月，效果更好)</option>
+              </select>
+            </div>
+            <p className="image-ocr-tip">
+              💡 国内服务，无需翻墙。注册即送免费额度，UAT 在用户中心一键创建。
+            </p>
+          </>
+        )}
 
         {config.provider === 'huggingface' && (
           <>
@@ -281,7 +359,7 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
               />
             </div>
             <p className="image-ocr-tip">
-              💡 默认模型 <code>yhshin/latex-ocr</code>。如果识别失败，可尝试换 <code>Norm/pix2tex</code> 或直接用 Mathpix。
+              💡 国外服务，可能需翻墙。默认模型 <code>yhshin/latex-ocr</code>。
             </p>
           </>
         )}
@@ -307,6 +385,9 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
                 placeholder="Mathpix app_key"
               />
             </div>
+            <p className="image-ocr-tip">
+              💡 最精准，但需支付一次性 setup fee (~$19.99)。
+            </p>
           </>
         )}
       </div>
