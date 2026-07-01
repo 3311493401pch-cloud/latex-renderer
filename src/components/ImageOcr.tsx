@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { parseBatchTex } from '../utils';
+import { parseBatchTex, fixOcrLatexErrors } from '../utils';
 
 export type OcrProvider = 'siliconflow' | 'simpletex' | 'huggingface' | 'mathpix';
 
@@ -218,7 +218,8 @@ function ImageOcr({ onImport, onClose }: ImageOcrProps) {
     if (!text) {
       throw new Error('SiliconFlow 返回结果为空');
     }
-    setResult(text);
+    // OCR 后处理：修复常见 LLM 识别错误
+    setResult(fixOcrLatexErrors(text));
   };
 
   // ===== SimpleTex =====

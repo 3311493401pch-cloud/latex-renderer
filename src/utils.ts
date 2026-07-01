@@ -150,6 +150,53 @@ export function parseBatchTex(text: string): { latex: string; source: string }[]
   return results;
 }
 
+/* ============================================
+   OCR 后处理：修复 LLM 识别中常见的 LaTeX 错误
+   ============================================ */
+
+const OCR_REPLACEMENTS: { pattern: RegExp; replacement: string }[] = [
+  { pattern: /\\nneq\b/g, replacement: '\\neq' }, // \nneq → \neq
+  { pattern: /\\geqsant\b/g, replacement: '\\geqslant' },
+  { pattern: /\\leqsant\b/g, replacement: '\\leqslant' },
+  { pattern: /\\\s*{/g, replacement: '\\{' },
+  { pattern: /\\begin\s*\{\s*cases\s*\}/g, replacement: '\\begin{cases}' },
+  { pattern: /\\end\s*\{\s*cases\s*\}/g, replacement: '\\end{cases}' },
+  { pattern: /\\begin\s*\{\s*aligned\s*\}/g, replacement: '\\begin{aligned}' },
+  { pattern: /\\end\s*\{\s*aligned\s*\}/g, replacement: '\\end{aligned}' },
+  { pattern: /\\begin\s*\{\s*pmatrix\s*\}/g, replacement: '\\begin{pmatrix}' },
+  { pattern: /\\end\s*\{\s*pmatrix\s*\}/g, replacement: '\\end{pmatrix}' },
+  { pattern: /\\in\s*fty\b/g, replacement: '\\infty' },
+  { pattern: /\\lim\s+_/g, replacement: '\\lim_{' },
+  { pattern: /\\sum\s+_/g, replacement: '\\sum_{' },
+  { pattern: /\\int\s+_/g, replacement: '\\int_{' },
+  { pattern: /\\to\s+0/g, replacement: '\\to 0' },
+  { pattern: /\\cdot\s+/g, replacement: '\\cdot ' },
+  { pattern: /\$\s*\$\s+/g, replacement: '$$ ' },
+  { pattern: /\s+\$\s*\$/g, replacement: ' $$' },
+  { pattern: /\\\\\s*\\end\b/g, replacement: '\\end' }, // 修复 cases 前多余换行
+];
+
+/**
+ * 修复 OCR 识别后的常见 LaTeX 拼写错误。
+ */
+export function fixOcrLatexErrors(raw: string): string {
+  if (!raw) return '';
+
+  let text = raw.replace(/\r\n/g, '\n');
+
+  for (const { pattern, replacement } of OCR_REPLACEMENTS) {
+    text = text.replace(pattern, replacement);
+  }
+
+  // 修复独立公式行被 $ 包裹的问题
+  text = text.replace(/\$\s*(\\\[[\s\S]*?\\\])\s*\$/g, '$1');
+
+  // 修复多个连续空行
+  text = text.replace(/\n{3,}/g, '\n\n');
+
+  return text.trim();
+}
+
 /**
  * Serialise problems into a .tex file content string.
  */
