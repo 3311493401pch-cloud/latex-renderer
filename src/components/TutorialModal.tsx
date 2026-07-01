@@ -4,52 +4,130 @@ interface TutorialModalProps {
   onClose: () => void;
 }
 
-const STEPS = [
+type Provider = 'huggingface' | 'mathpix';
+
+const HF_STEPS = [
   {
     num: 1,
-    title: '打开 AI Agent',
+    title: '注册 Hugging Face 账号',
     detail: (
       <>
         访问{' '}
-        <a
-          href="https://doubao.com/bot/Wg0vYdhD"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          https://doubao.com/bot/Wg0vYdhD
-        </a>
+        <a href="https://huggingface.co/join" target="_blank" rel="noopener noreferrer">
+          huggingface.co/join
+        </a>{' '}
+        注册账号（免费，邮箱即可）
       </>
     ),
   },
   {
     num: 2,
-    title: '发送截图',
-    detail: '将电子版题目截图或拍照，发送给 Agent',
+    title: '创建 Access Token',
+    detail: (
+      <>
+        登录后进入{' '}
+        <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer">
+          Settings → Access Tokens
+        </a>{' '}
+        → 点 <code>New token</code>
+      </>
+    ),
   },
   {
     num: 3,
-    title: '输入「识别」',
-    detail: '在对话框中输入「识别」，等待 Agent 返回 LaTeX 代码',
+    title: '设置 Token 信息',
+    detail: (
+      <>
+        Name 随便填（如 <code>latex-ocr</code>），Type 选 <code>Read</code>，点 Create token
+      </>
+    ),
   },
   {
     num: 4,
-    title: '复制结果',
-    detail: '点击 Agent 回复右上角的复制按钮，复制全部 LaTeX 内容',
+    title: '复制 Token',
+    detail: (
+      <>
+        生成后会显示一段以 <code>hf_</code> 开头的字符串，点复制（⚠️ 只显示一次，请妥善保存）
+      </>
+    ),
   },
   {
     num: 5,
-    title: '回到本网站粘贴',
+    title: '回到本站填入',
     detail: (
       <>
-        点左侧「📋 批量导入」→ 粘贴 →「导入」，或逐条粘贴到题目输入框
+        点左侧「🖼 图片识别」→ 服务选 <code>Hugging Face</code> → 粘贴 Token，模型默认
+        <code>lukas-blecher/LaTeX-OCR</code> 即可
       </>
     ),
+  },
+  {
+    num: 6,
+    title: '上传图片识别',
+    detail: '上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
+  },
+];
+
+const MATHPIX_STEPS = [
+  {
+    num: 1,
+    title: '注册 Mathpix 账号',
+    detail: (
+      <>
+        访问{' '}
+        <a href="https://dashboard.mathpix.com/signup" target="_blank" rel="noopener noreferrer">
+          dashboard.mathpix.com/signup
+        </a>{' '}
+        注册（需邮箱验证）
+      </>
+    ),
+  },
+  {
+    num: 2,
+    title: '进入 API Keys 页面',
+    detail: (
+      <>
+        登录后进入 Dashboard，左侧菜单点{' '}
+        <a href="https://dashboard.mathpix.com/api-keys" target="_blank" rel="noopener noreferrer">
+          API Keys
+        </a>
+      </>
+    ),
+  },
+  {
+    num: 3,
+    title: '创建新 Key',
+    detail: <>点 <code>+ Create new API key</code>，名称随便填</>,
+  },
+  {
+    num: 4,
+    title: '复制 app_id 和 app_key',
+    detail: (
+      <>
+        创建后会显示 <code>app_id</code>（短字符串）和 <code>app_key</code>（长字符串），分别复制
+      </>
+    ),
+  },
+  {
+    num: 5,
+    title: '回到本站填入',
+    detail: (
+      <>
+        点左侧「🖼 图片识别」→ 服务选 <code>Mathpix</code> → 粘贴 <code>app_id</code> 和 <code>app_key</code>
+      </>
+    ),
+  },
+  {
+    num: 6,
+    title: '上传图片识别',
+    detail: '上传题目截图 → 点「🔍 识别」→ 结果可编辑 →「➕ 添加为新题目」',
   },
 ];
 
 function TutorialModal({ onClose }: TutorialModalProps) {
   const [countdown, setCountdown] = useState(5);
   const [agreed, setAgreed] = useState(false);
+  const [provider, setProvider] = useState<Provider>('huggingface');
   const isFirstVisit = !localStorage.getItem('latex-tutorial-seen');
 
   useEffect(() => {
@@ -82,11 +160,13 @@ function TutorialModal({ onClose }: TutorialModalProps) {
     onClose();
   };
 
+  const steps = provider === 'huggingface' ? HF_STEPS : MATHPIX_STEPS;
+
   return (
     <div className="tutorial-overlay" onClick={handleClose}>
       <div className="tutorial-modal" onClick={(e) => e.stopPropagation()}>
         <div className="tutorial-header">
-          <h2 className="tutorial-title">📖 使用教程</h2>
+          <h2 className="tutorial-title">📖 图片识别使用教程</h2>
           {!canClose ? (
             <span className="tutorial-countdown">
               {countdown > 0
@@ -100,8 +180,42 @@ function TutorialModal({ onClose }: TutorialModalProps) {
           )}
         </div>
 
+        <p className="tutorial-intro">
+          本站支持上传题目图片自动识别为 LaTeX。需要配置一个识别服务的 API Key（数据仅保存在你的浏览器本地，不会上传到本站服务器）。下方任选其一即可：
+        </p>
+
+        {/* Provider Tabs */}
+        <div className="tutorial-tabs">
+          <button
+            className={`tutorial-tab ${provider === 'huggingface' ? 'active' : ''}`}
+            onClick={() => setProvider('huggingface')}
+          >
+            🤗 Hugging Face（免费）
+          </button>
+          <button
+            className={`tutorial-tab ${provider === 'mathpix' ? 'active' : ''}`}
+            onClick={() => setProvider('mathpix')}
+          >
+            ⚡ Mathpix（更精准）
+          </button>
+        </div>
+
+        <div className="tutorial-tab-info">
+          {provider === 'huggingface' ? (
+            <p>
+              <strong>免费方案</strong>。Hugging Face 提供开源模型推理 API，注册即送额度，
+              日常识别题目足够用。识别效果依赖模型，复杂公式偶有偏差。
+            </p>
+          ) : (
+            <p>
+              <strong>付费方案</strong>。Mathpix 是业界最精准的公式识别服务，新用户有 1000 次免费额度，
+              之后约 $0.01/次。对复杂公式、手写体支持更好。
+            </p>
+          )}
+        </div>
+
         <ol className="tutorial-steps">
-          {STEPS.map((step) => (
+          {steps.map((step) => (
             <li key={step.num} className="tutorial-step">
               <span className="tutorial-step-num">{step.num}</span>
               <div className="tutorial-step-body">
@@ -114,7 +228,8 @@ function TutorialModal({ onClose }: TutorialModalProps) {
 
         <div className="tutorial-footer">
           <p className="tutorial-hint">
-            💡 排版设置（间距 / 字号 / 分栏 / 编号）请自行探索左侧「⚙ 排版设置」
+            💡 也可不用图片识别，直接在「📋 批量导入」粘贴 AI 返回的 LaTeX 代码。
+            排版设置（间距 / 字号 / 分栏 / 编号）请探索左侧「⚙ 排版设置」。
           </p>
 
           <div className="tutorial-disclaimer">
